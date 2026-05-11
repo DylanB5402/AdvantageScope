@@ -7,7 +7,7 @@
 
 import { Decoder, Encoder } from "@msgpack/msgpack";
 
-export const NT4_PORTS_DEFAULT = [5810];
+export const NT4_PORTS_DEFAULT = [443];
 
 const typestrIdxLookup: { [id: string]: number } = {
   boolean: 0,
@@ -179,7 +179,7 @@ export class NT4_Client {
     try {
       result = await Promise.any(
         this.serverPorts.map((port) =>
-          fetch("http://" + this.serverAddr + ":" + port.toString(), {
+          fetch("https://" + this.serverAddr + ":" + port.toString(), {
             signal: AbortSignal.timeout(250)
           })
         )
@@ -189,7 +189,8 @@ export class NT4_Client {
       let requestLength = new Date().getTime() - requestStart;
       setTimeout(() => this.connectOnAlive(), 350 - requestLength);
     } else {
-      this.activeServerPort = parseInt(result.url.split(":")[2].split("/")[0]);
+      let url = new URL(result.url);
+      this.activeServerPort = url.port ? parseInt(url.port) : 443;
       this.ws_connect();
     }
   }
@@ -676,7 +677,7 @@ export class NT4_Client {
   private ws_connect(rttWs = false) {
     if (this.activeServerPort === null) return;
     let ws = new WebSocket(
-      "ws://" + this.serverAddr + ":" + this.activeServerPort.toString() + "/nt/" + this.appName,
+      "wss://" + this.serverAddr + ":" + this.activeServerPort.toString() + "/nt/" + this.appName,
       rttWs ? ["rtt.networktables.first.wpi.edu"] : ["v4.1.networktables.first.wpi.edu", "networktables.first.wpi.edu"]
     );
     if (rttWs) {

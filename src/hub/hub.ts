@@ -444,7 +444,7 @@ function startLive(isSim = false) {
 
   let address = "";
   if (DISTRIBUTION === Distribution.Lite) {
-    address = window.location.hostname;
+    address = window.preferences.robotAddress;
   } else if (isSim) {
     address = SIM_ADDRESS;
   } else if (window.preferences?.usb) {
