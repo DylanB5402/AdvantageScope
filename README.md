@@ -20,3 +20,15 @@ AdvantageScope includes the following tools:
 Feedback, feature requests, and bug reports are welcome on the [issues page](https://github.com/Mechanical-Advantage/AdvantageScope/issues). See the [contribution page](CONTRIBUTING.md) for more information on contributing to AdvantageScope. For non-public inquiries, please send a message to software@team6328.org.
 
 ![Example screenshot](/docs/docs/img/screenshot-light.png)
+
+## Building AdvantageScope Lite
+
+AdvantageScope Lite is a browser-based version of the app. To build it:
+
+```bash
+ASCOPE_DISTRIBUTION=LITE npm run compile
+```
+
+Output goes to `lite/static/bundles/`. Serve the `lite/static/` directory with any static file server.
+
+For real-time simulation visualization (NT4 WebSocket), the WASM log parser (`wasm:compile`) and documentation build (`docs:build-embed`) are not needed — just `compile` is sufficient.
