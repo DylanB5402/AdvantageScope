@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "advantagescope-lite",
+  "compatibility_date": "2026-05-25",
+  "assets": {
+    "directory": "lite/static"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}

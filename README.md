@@ -45,6 +45,8 @@ Open `http://localhost:5808` and use **Connect Live** (`Ctrl+K` / `Cmd+K`) to co
 - Build command: `npm run build:static`
 - Output directory: `lite/static`
 
+A `wrangler.jsonc` is included in the repo with the correct settings.
+
 **GitHub Pages** — use a workflow that runs `npm run build:static` and deploys `lite/static/` via `actions/upload-pages-artifact`.
 
 ### Building with the server (original)

@@ -17,7 +17,7 @@
     "build-linux": "npm run compile && npm run wasm:compile && npm run docs:build-embed && electron-builder build -c.electronVersion=37.10.3",
     "fast-build": "npm run compile && npm run wasm:compile && npm run docs:build-embed && electron-builder build --dir",
     "watch": "rolldown -c -w",
-    "build:static": "ASCOPE_DISTRIBUTION=LITE npm run compile && node generateAssetIndex.mjs",
+    "build:static": "ASCOPE_DISTRIBUTION=LITE npm run compile && npm run docs:build-embed && node generateAssetIndex.mjs",
     "download-owlet": "rolldown -c --configRunOwletDownload && node runOwletDownload.js",
     "format": "license-check-and-add add -f file-header-config.json && prettier --write .",
     "check-format": "license-check-and-add check -f file-header-config.json && prettier --check .",
