@@ -498,7 +498,7 @@ document.addEventListener("drop", (event) => {
   event.preventDefault();
   event.stopPropagation();
 
-  if (event.dataTransfer) {
+  if (event.dataTransfer && window.electron) {
     let files: string[] = [];
     for (const file of event.dataTransfer.files) {
       files.push(window.electron.getFilePath(file));

@@ -21,14 +21,38 @@ Feedback, feature requests, and bug reports are welcome on the [issues page](htt
 
 ![Example screenshot](/docs/docs/img/screenshot-light.png)
 
-## Building AdvantageScope Lite
+## Building AdvantageScope Lite (Static)
 
-AdvantageScope Lite is a browser-based version of the app. To build it:
+AdvantageScope Lite can be built as a purely static web app suitable for hosting on any static file server, Cloudflare Pages, GitHub Pages, etc. The static build includes live data visualization (NT4 WebSocket) but omits log file access and asset upload features that require a backend server.
+
+```bash
+npm run build:static
+```
+
+This runs `compile` with the Lite distribution and generates a static `assets.json`. Output goes to `lite/static/`.
+
+To test locally:
+
+```bash
+cd lite/static && python3 -m http.server 5808
+```
+
+Open `http://localhost:5808` and use **Connect Live** (`Ctrl+K` / `Cmd+K`) to connect to your NT4-enabled robot or simulator. The WebSocket connection goes directly from the browser — no backend server needed.
+
+### Deploying to hosting platforms
+
+**Cloudflare Pages** — connect your repo, set:
+- Build command: `npm run build:static`
+- Output directory: `lite/static`
+
+**GitHub Pages** — use a workflow that runs `npm run build:static` and deploys `lite/static/` via `actions/upload-pages-artifact`.
+
+### Building with the server (original)
+
+To build the original Lite version that includes log file access via the Python server:
 
 ```bash
 ASCOPE_DISTRIBUTION=LITE npm run compile
 ```
 
-Output goes to `lite/static/bundles/`. Serve the `lite/static/` directory with any static file server.
-
-For real-time simulation visualization (NT4 WebSocket), the WASM log parser (`wasm:compile`) and documentation build (`docs:build-embed`) are not needed — just `compile` is sufficient.
+Then serve with `python3 lite/lite_server.py --enable-file-access`.

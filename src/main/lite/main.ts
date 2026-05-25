@@ -43,7 +43,6 @@ let MENU_ANCHOR: HTMLElement;
 let hubPort: MessagePort | null = null;
 let popupMenu = new TinyPopupMenu();
 let assetsPromise: Promise<AdvantageScopeAssets>;
-let downloadInterval: number | null = null;
 let popupRequiresForceClose = false;
 
 /**
@@ -90,10 +89,6 @@ function openPopupWindow(
 ): Promise<MessagePort> {
   return new Promise((resolve) => {
     popupRequiresForceClose = requireForceClose;
-
-    if (downloadInterval !== null) {
-      window.clearInterval(downloadInterval);
-    }
 
     POPUP_FRAME.style.width = size[0].toString() + (type === "pixels" ? "px" : "%");
     POPUP_FRAME.style.height = size[1].toString() + (type === "pixels" ? "px" : "%");
@@ -142,9 +137,6 @@ function closePopupWindow(forceClose = false) {
   POPUP_FRAME.src = "";
   HUB_FRAME.classList.remove("background");
   window.focus();
-  if (downloadInterval !== null) {
-    window.clearInterval(downloadInterval);
-  }
 }
 
 /**
@@ -186,61 +178,6 @@ function openPreferences() {
     if (prefsRaw !== null) mergePreferences(prefs, JSON.parse(prefsRaw));
     port.postMessage({ platform: "lite", prefs: prefs });
   });
-}
-
-/** Opens a popup window for downloading logs. */
-function openDownload() {
-  openPopupWindow("www/download.html", [35, 65], "percent", (message, port) => {
-    switch ((message as NamedMessage).name) {
-      case "start":
-        let path: string = message.data.path;
-        let updateList = async () => {
-          let response: Response;
-          try {
-            response = await fetch(`logs?folder=${encodeURIComponent(path)}`);
-          } catch (e) {
-            sendMessage(port, "show-error", "Fetch failed");
-            return;
-          }
-          if (!response.ok) {
-            if (response.status === 404) {
-              sendMessage(port, "show-error", "No such file");
-            } else {
-              sendMessage(port, "show-error", response.statusText);
-            }
-          } else {
-            sendMessage(port, "set-list", await response.json());
-          }
-        };
-        updateList();
-        downloadInterval = window.setInterval(() => updateList(), 3000);
-        break;
-
-      case "close":
-        closePopupWindow();
-        break;
-
-      case "save":
-        closePopupWindow();
-        sendMessage(hubPort, "open-files", { files: message.data, merge: false });
-        break;
-    }
-  }).then((port) => {
-    let prefs = DEFAULT_PREFS;
-    let prefsRaw = localStorage.getItem(LocalStorageKeys.PREFS);
-    if (prefsRaw !== null) mergePreferences(prefs, JSON.parse(prefsRaw));
-    sendMessage(port, "set-platform", "lite");
-    sendMessage(port, "set-preferences", prefs);
-  });
-}
-
-/** Opens a popup window for uploading assets. */
-async function openUploadAsset() {
-  let port = await openPopupWindow("www/uploadAsset.html", [360, 120], "pixels", async () => {
-    closePopupWindow();
-    sendMessage(hubPort, "set-assets", await loadAssets());
-  });
-  port.postMessage(null);
 }
 
 async function initHub() {
@@ -335,19 +272,9 @@ async function handleHubMessage(message: NamedMessage) {
     case "historical-start":
       {
         const uuid: string = message.data.uuid;
-        const path: string = message.data.path;
-
-        let prefs = DEFAULT_PREFS;
-        let prefsRaw = localStorage.getItem(LocalStorageKeys.PREFS);
-        if (prefsRaw !== null) mergePreferences(prefs, JSON.parse(prefsRaw));
-
-        let response = await fetch(`logs/${encodeURIComponent(path)}?folder=${encodeURIComponent(prefs.remotePath)}`);
-        let buffer = await response.arrayBuffer();
-        let array = new Uint8Array(buffer);
-
         sendMessage(hubPort, "historical-data", {
-          files: [array],
-          error: null,
+          files: [],
+          error: "Log file access is not available in the static build.",
           uuid: uuid
         });
       }
@@ -437,12 +364,6 @@ async function handleHubMessage(message: NamedMessage) {
             if (prefsRaw !== null) mergePreferences(prefs, JSON.parse(prefsRaw));
             menuItems = [
               {
-                content: `Open Log (\u21e7 ${modifier} O)`,
-                callback() {
-                  openDownload();
-                }
-              },
-              {
                 content: `Connect Live (${modifier} K)`,
                 callback() {
                   sendMessage(hubPort, "start-live", false);
@@ -461,12 +382,6 @@ async function handleHubMessage(message: NamedMessage) {
                     }
                   };
                 })
-              },
-              {
-                content: `Upload Asset`,
-                callback() {
-                  openUploadAsset();
-                }
               }
             ];
             break;
@@ -1192,9 +1107,7 @@ function processKeydown(event: KeyboardEvent): boolean {
   let triggered = true;
   let modifier = event.metaKey || event.ctrlKey;
   let lowerKey = event.key.toLowerCase();
-  if (event.shiftKey && modifier && lowerKey === "o") {
-    openDownload();
-  } else if (!event.shiftKey && modifier && lowerKey === "k") {
+  if (!event.shiftKey && modifier && lowerKey === "k") {
     sendMessage(hubPort, "start-live", false);
   } else if (!event.shiftKey && modifier && lowerKey === "\\") {
     sendMessage(hubPort, "zoom-enabled");
