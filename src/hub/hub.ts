@@ -459,7 +459,7 @@ function startLive(sourceType: "robot" | "sim" | "ds") {
 
   let address = "";
   if (IS_LITE) {
-    address = window.location.hostname;
+    address = window.preferences.robotAddress;
   } else if (sourceType === "sim" || sourceType === "ds") {
     address = "127.0.0.1";
   } else {
