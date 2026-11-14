@@ -7,7 +7,9 @@
 
 import { Decoder, Encoder } from "@msgpack/msgpack";
 
-export const NT4_PORTS_DEFAULT = [443];
+export const NT4_PORTS_DEFAULT = [5810];
+/** HTTPS edge (e.g. Codespaces public port forward) where NT is reached on :443. */
+export const NT4_PORTS_SECURE = [443];
 export const NT4_PORTS_DS = [6767];
 export const NT4_PORTS_SYSTEMCORE = [6810];
 
@@ -111,6 +113,7 @@ export class NT4_Client {
 
   private serverAddr;
   private serverPorts;
+  private secure: boolean;
   private activeServerPort: number | null = null;
   private ws: WebSocket | null = null;
   private rttWs: WebSocket | null = null;
@@ -138,6 +141,7 @@ export class NT4_Client {
    * @param onNewTopicData Gets called when any new data is available
    * @param onConnect Gets called once client completes initial handshake with server
    * @param onDisconnect Gets called once client detects server has disconnected
+   * @param secure When true, use https/wss (required when the Lite page is served over HTTPS).
    */
   constructor(
     serverAddr: string,
@@ -148,10 +152,12 @@ export class NT4_Client {
     onTopicPropertiesUpdate: (topic: NT4_Topic) => void,
     onNewTopicData: (topic: NT4_Topic, timestamp_us: number, value: unknown) => void,
     onConnect: () => void,
-    onDisconnect: () => void
+    onDisconnect: () => void,
+    secure = false
   ) {
     this.serverAddr = serverAddr;
     this.serverPorts = serverPorts;
+    this.secure = secure;
     this.appName = appName;
     this.onTopicAnnounce = onTopicAnnounce;
     this.onTopicUnannounce = onTopicUnannounce;
@@ -178,10 +184,11 @@ export class NT4_Client {
     if (!this.serverConnectionRequested) return;
     let result: Response | null = null;
     let requestStart = new Date().getTime();
+    let httpScheme = this.secure ? "https://" : "http://";
     try {
       result = await Promise.any(
         this.serverPorts.map((port) =>
-          fetch("https://" + this.serverAddr + ":" + port.toString(), {
+          fetch(httpScheme + this.serverAddr + ":" + port.toString(), {
             signal: AbortSignal.timeout(250)
           })
         )
@@ -192,7 +199,7 @@ export class NT4_Client {
       setTimeout(() => this.connectOnAlive(), 350 - requestLength);
     } else {
       let url = new URL(result.url);
-      this.activeServerPort = url.port ? parseInt(url.port) : 443;
+      this.activeServerPort = url.port ? parseInt(url.port) : this.secure ? 443 : this.serverPorts[0];
       this.ws_connect();
     }
   }
@@ -678,8 +685,9 @@ export class NT4_Client {
 
   private ws_connect(rttWs = false) {
     if (this.activeServerPort === null) return;
+    let wsScheme = this.secure ? "wss://" : "ws://";
     let ws = new WebSocket(
-      "wss://" + this.serverAddr + ":" + this.activeServerPort.toString() + "/nt/" + this.appName,
+      wsScheme + this.serverAddr + ":" + this.activeServerPort.toString() + "/nt/" + this.appName,
       rttWs ? ["rtt.networktables.first.wpi.edu"] : ["v4.1.networktables.first.wpi.edu", "networktables.first.wpi.edu"]
     );
     if (rttWs) {

@@ -8,6 +8,7 @@
 import { AdvantageScopeAssets } from "../shared/AdvantageScopeAssets";
 import { HubState } from "../shared/HubState";
 import NamedMessage from "../shared/NamedMessage";
+import { resolveLiteNtAddress } from "../shared/LiteNtAddress";
 import Preferences, { getRobotAddress } from "../shared/Preferences";
 import Selection from "../shared/Selection";
 import { SourceListItemState, SourceListTypeMemory } from "../shared/SourceListConfig";
@@ -459,7 +460,9 @@ function startLive(sourceType: "robot" | "sim" | "ds") {
 
   let address = "";
   if (IS_LITE) {
-    address = window.preferences.robotAddress;
+    // Codespaces: rewrite *-5808.* → *-5810.*; Systemcore: page hostname;
+    // otherwise honor a non-default Robot Address override.
+    address = resolveLiteNtAddress(window.preferences.robotAddress);
   } else if (sourceType === "sim" || sourceType === "ds") {
     address = "127.0.0.1";
   } else {

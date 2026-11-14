@@ -14,7 +14,14 @@ import { AUTONOMOUS_KEYS, ENABLED_KEYS, UTILITY_KEYS } from "../../../shared/log
 import { checkArrayType } from "../../../shared/util";
 import { LiveDataSource, LiveDataSourceStatus } from "../LiveDataSource";
 import CustomSchemas from "../schema/CustomSchemas";
-import { NT4_Client, NT4_PORTS_DEFAULT, NT4_PORTS_DS, NT4_PORTS_SYSTEMCORE, NT4_Topic } from "./NT4";
+import {
+  NT4_Client,
+  NT4_PORTS_DEFAULT,
+  NT4_PORTS_DS,
+  NT4_PORTS_SECURE,
+  NT4_PORTS_SYSTEMCORE,
+  NT4_Topic
+} from "./NT4";
 import NT4Tuner from "./NT4Tuner";
 
 export const WPILOG_PREFIX = "NT:";
@@ -215,17 +222,24 @@ export default class NT4Source extends LiveDataSource {
       this.setStatus(LiveDataSourceStatus.Error);
     } else {
       this.log = new Log();
+      // Lite on an HTTPS page (Codespaces public forward) must use wss and the
+      // edge :443 mapping; desktop / http Lite keep plain ws on the NT port.
+      let secure = IS_LITE && window.location.protocol === "https:";
       let ports: number[];
-      switch (this.mode) {
-        case NT4Mode.Systemcore:
-          ports = NT4_PORTS_SYSTEMCORE;
-          break;
-        case NT4Mode.DriverStation:
-          ports = NT4_PORTS_DS;
-          break;
-        default:
-          ports = NT4_PORTS_DEFAULT;
-          break;
+      if (secure) {
+        ports = NT4_PORTS_SECURE;
+      } else {
+        switch (this.mode) {
+          case NT4Mode.Systemcore:
+            ports = NT4_PORTS_SYSTEMCORE;
+            break;
+          case NT4Mode.DriverStation:
+            ports = NT4_PORTS_DS;
+            break;
+          default:
+            ports = NT4_PORTS_DEFAULT;
+            break;
+        }
       }
       this.client = new NT4_Client(
         address,
@@ -398,7 +412,8 @@ export default class NT4Source extends LiveDataSource {
           this.shouldRunOutputCallback = false;
           this.connectTime = null;
           if (this.noFieldsTimeout) clearTimeout(this.noFieldsTimeout);
-        }
+        },
+        secure
       );
 
       // Start connection
